@@ -29,7 +29,7 @@ RecordModel.getAllReservation = async (options) => {
     }
 };
 
-RecordModel.addReservation = async (data, callback) => {
+RecordModel.addReservation = async (data) => {
     try {
         const resvID = data.resvID ? data.resvID : "HRes_" + uuid.v4();
         let document = {
@@ -46,10 +46,9 @@ RecordModel.addReservation = async (data, callback) => {
             "resvID": resvID
         }
         await collection.upsert(resvID, document, { timeout: 10000 });
-        callback(null, resvID);
+        return resvID;
     } catch (err) {
-        callback(err, null);
-        return;
+        return {error: err};
     }
 };
 

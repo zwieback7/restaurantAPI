@@ -51,6 +51,12 @@ type UpdateConfirmation {
     resvID : String
 }
 
+enum StatusEnum{
+    open
+    cancelled
+    completed
+}
+
 type Query {
     getReservationByID(id: String!): Record
     getAllReservations(status: String, date: String): [Reservation]
@@ -59,17 +65,18 @@ type Query {
 type Mutation {
     updateReservation(id: ID, newRecord: UpdateRecordInput): UpdateConfirmation
     createReservation(newRecord: CreateRecordInput): UpdateConfirmation
+    updateReservationStatus(id: ID, status: StatusEnum): UpdateConfirmation
 }
 `);
 
 
 const root = {
-    getReservationByID: async ({id}) => {
+    getReservationByID: async ({ id }) => {
         const res = await recordmodel.getReservation(id);
         return res;
     },
 
-    getAllReservations: async ({status, date}) => {
+    getAllReservations: async ({ status, date }) => {
 
         let options = {
             "status": status,
@@ -79,31 +86,46 @@ const root = {
         return res.rows;
     },
 
-    updateReservation: async ({id, newRecord}) => {
+    updateReservation: async ({ id, newRecord }) => {
         const res = await recordmodel.getReservation(id);
         if (res.error) {
-            return { message: "fail to make reservation"}
+            return { message: "fail to get reservation" }
         }
         let data = newRecord;
         data.resvID = id;
-        recordmodel.addReservation(data, (err, res) => {
-            if (err) {
-                return { message: "fail to make reservation" }
-            }
-            console.log({"resvID": res});
-            return { message: "Updated", resvID: res };
-        });
+        let result = await recordmodel.addReservation(data);
+        if (result.error) {
+            return { message: "fail to make reservation" }
+        }
+        return { message: "Updated", resvID: result };
     },
 
-    createReservation: async ({newRecord}) => {
-        recordmodel.addReservation(newRecord, (err, res) => {
-            if (err) {
-                return { message: "fail to make reservation" };
-            }
-            console.log({"resvID": res});
-            return { message: "Created", resvID: res };
-        });
-    }
+    createReservation: async ({ newRecord }) => {
+        if (!newRecord.name ||
+            !newRecord.email) {
+            return { message: "Info missing" };
+        }
+        let res = await recordmodel.addReservation(newRecord);
+        if (res.error) {
+            return { message: "fail to make reservation" };
+        }
+        return { message: "Created", resvID: res };
+    },
+
+    updateReservationStatus: async ({ id, status }) => {
+        const res = await recordmodel.getReservation(id);
+        if (res.error) {
+            return { message: "fail to get reservation" }
+        }
+        let data = res;
+        data.resvID = id;
+        data.status = status;
+        let result = await recordmodel.addReservation(data);
+        if (result.error) {
+            return { message: "fail to make reservation" }
+        }
+        return { message: "Updated", resvID: result };
+    },
 };
 
 

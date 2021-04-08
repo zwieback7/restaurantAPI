@@ -21,7 +21,7 @@ router.get('/reservations/', basicAuth({ users: config.employees }), async (req,
 
 });
 
-router.post('/reservations', (req, result) => {
+router.post('/reservations', async (req, result) => {
   if (!req.body.name ||
     !req.body.email) {
     return result.status(400).send({ message: "Info Missing" });
@@ -31,15 +31,11 @@ router.post('/reservations', (req, result) => {
   let data = req.body;
   data.resvID = null;
   data.status = "open";
-  recordmodel.addReservation(data, (err, res) => {
-    if (err) {
-      return result.status(400).send({ message: "fail to make reservation" });
-    }
-    result.send({
-      message: "success",
-      data: { "reservationID": res }
-    });
-  });
+  let res = await recordmodel.addReservation(data);
+  if (res.error) {
+    return result.status(400).send({ message: "fail to make reservation" });
+  }
+  result.send({"reservationID": res});
 });
 
 
@@ -63,22 +59,17 @@ router.post('/reservations/:id', async (req, result) => {
   }
   let data = req.body;
   data.resvID = id;
-  recordmodel.addReservation(data, (err, res) => {
-    if (err) {
+  let resvID = await recordmodel.addReservation(data);
+  if (resvID.error) {
       return result.status(400).send(err);
-    }
-    result.send({
-      message: "success",
-      data: { "reservationID": res }
-    });
-  });
-
+  }
+  result.send({"reservationID": resvID});
 });
 
 
 router.post('/reservations/:id/status', async (req, result) => {
-  if(!["open","cancelled","completed"].includes(req.body.status)){
-    return result.status(400).send({error: "please use status in [open,cancelled,completed]"});
+  if (!["open", "cancelled", "completed"].includes(req.body.status)) {
+    return result.status(400).send({ error: "please use status in [open,cancelled,completed]" });
   }
   const id = req.params.id;
   const res = await recordmodel.getReservation(id);
@@ -88,15 +79,11 @@ router.post('/reservations/:id/status', async (req, result) => {
   let data = res;
   data.status = req.body.status;
   data.resvID = id;
-  recordmodel.addReservation(data, (err, res) => {
-    if (err) {
+  let resvID = await recordmodel.addReservation(data);
+  if (resvID.error) {
       return result.status(400).send(err);
-    }
-    result.send({
-      message: "success",
-      data: { "reservationID": res }
-    });
-  });
+  }
+  result.send({"reservationID": resvID});
 });
 
 module.exports = router;
