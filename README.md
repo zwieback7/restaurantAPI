@@ -5,9 +5,9 @@
 * http://localhost:3000/graphql/
 
 ### Configuration File
-* create file _**config.json**_ in top-level directory
-* put couchbase server, bucket and DB user credentials info
-* put employee credentials
+- create file _**config.json**_ in top-level directory using the following template
+- put couchbase server, bucket and DB user credentials info
+- put employee credentials
 
 ```
 {
